@@ -6,8 +6,11 @@
 // ============================================================
 
 import { generateText, Output } from 'ai'
+import { createGroq } from '@ai-sdk/groq'
 import { z } from 'zod'
 import { getCrawlStore } from './store'
+
+const groq = createGroq({ apiKey: process.env.GROQ_API_KEY })
 import { parseHTML } from './extractor'
 import { scoreKeywordRelevance, scoreLinkRelevance } from './keyword-filter'
 import {
@@ -112,7 +115,7 @@ INSTRUCTIONS:
 
   try {
     const { output } = await generateText({
-      model: 'groq/llama-3.3-70b-versatile',
+      model: groq('llama-3.3-70b-versatile'),
       output: Output.object({ schema: jobExtractionSchema }),
       prompt,
       maxOutputTokens: 4000,
