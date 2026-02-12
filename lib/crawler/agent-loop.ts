@@ -446,7 +446,11 @@ export async function startCrawlLoop(): Promise<void> {
   if (store.frontier.size() === 0) {
     store.seedFrontier()
     store.log('info', `Seeded frontier with ${store.frontier.size()} initial URLs`)
+  } else {
+    store.log('info', `Frontier already has ${store.frontier.size()} URLs`)
   }
+
+  store.log('info', `Using AI provider: ${store.config.aiProvider}`)
 
   crawlLoopPromise = runLoop()
   await crawlLoopPromise

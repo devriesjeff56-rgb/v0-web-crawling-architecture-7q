@@ -62,6 +62,15 @@ export function useAnalytics() {
   })
 }
 
+// Holds the current SSE abort controller so the crawl connection can be
+// cancelled from other parts of the app (e.g. stop button).
+let _crawlAbortController: AbortController | null = null
+
+/**
+ * Start a crawl. Returns immediately after the SSE connection is
+ * established. The connection stays open in the background to keep the
+ * serverless function alive while the crawler runs.
+ */
 export async function startCrawl(
   location: string,
   radiusKm: number,
@@ -74,20 +83,54 @@ export async function startCrawl(
     languagePreference?: string
   }
 ) {
+  // Abort any previous connection
+  _crawlAbortController?.abort()
+  _crawlAbortController = new AbortController()
+
   const res = await fetch('/api/crawl/start', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ location, radiusKm, ...aiConfig }),
+    signal: _crawlAbortController.signal,
   })
-  return res.json()
+
+  // If the response is JSON (e.g. "already running"), return as-is
+  const contentType = res.headers.get('content-type') || ''
+  if (contentType.includes('application/json')) {
+    return res.json()
+  }
+
+  // Otherwise it is an SSE stream. Read it in the background to keep
+  // the connection (and thus the serverless function) alive.
+  const reader = res.body?.getReader()
+  if (reader) {
+    // Fire-and-forget: read until the stream closes
+    ;(async () => {
+      try {
+        while (true) {
+          const { done } = await reader.read()
+          if (done) break
+        }
+      } catch {
+        // AbortError when stop is pressed, or network error -- both OK
+      }
+    })()
+  }
+
+  return { message: 'Crawler started (streaming)', stats: null }
 }
 
 export async function stopCrawl() {
+  // Abort the SSE stream so the serverless function can terminate
+  _crawlAbortController?.abort()
+  _crawlAbortController = null
   const res = await fetch('/api/crawl/stop', { method: 'POST' })
   return res.json()
 }
 
 export async function resetCrawl() {
+  _crawlAbortController?.abort()
+  _crawlAbortController = null
   const res = await fetch('/api/crawl/reset', { method: 'POST' })
   return res.json()
 }
