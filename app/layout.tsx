@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import { Inter, JetBrains_Mono } from 'next/font/google'
 import { ThemeProvider } from 'next-themes'
+import { Toaster } from 'sonner'
 
 import './globals.css'
 
@@ -40,6 +41,15 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           {children}
+          <Toaster
+            position="bottom-right"
+            toastOptions={{
+              className: 'font-sans text-sm',
+            }}
+            theme="dark"
+            richColors
+            closeButton
+          />
         </ThemeProvider>
       </body>
     </html>

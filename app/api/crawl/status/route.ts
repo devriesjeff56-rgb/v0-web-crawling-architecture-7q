@@ -15,6 +15,12 @@ export async function GET() {
       radiusKm: store.config.radiusKm,
       maxDepth: store.config.maxDepth,
       delayBetweenRequests: store.config.delayBetweenRequests,
+      aiProvider: store.config.aiProvider,
+      additionalKeywords: store.config.additionalKeywords,
+      exclusionTerms: store.config.exclusionTerms,
+      seniorityFilter: store.config.seniorityFilter,
+      languagePreference: store.config.languagePreference,
+      customSystemPrompt: store.config.customSystemPrompt,
     },
   })
 }
