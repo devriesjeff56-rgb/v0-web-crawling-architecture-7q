@@ -50,6 +50,8 @@ export interface CrawlStats {
   pagesPerMinute: number
 }
 
+export type AiProvider = 'groq' | 'grok'
+
 export interface CrawlConfig {
   location: string
   latitude: number
@@ -61,6 +63,13 @@ export interface CrawlConfig {
   delayBetweenRequests: number
   requestTimeout: number
   userAgent: string
+  // AI configuration
+  aiProvider: AiProvider
+  customSystemPrompt: string
+  additionalKeywords: string[]
+  exclusionTerms: string[]
+  seniorityFilter: string
+  languagePreference: string
 }
 
 export interface PageAnalysis {

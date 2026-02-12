@@ -7,10 +7,12 @@
 
 import { generateText, Output } from 'ai'
 import { createGroq } from '@ai-sdk/groq'
+import { createXai } from '@ai-sdk/xai'
 import { z } from 'zod'
 import { getCrawlStore } from './store'
 
 const groq = createGroq({ apiKey: process.env.GROQ_API_KEY })
+const xai = createXai({ apiKey: process.env.XAI_API_KEY })
 import { parseHTML } from './extractor'
 import { scoreKeywordRelevance, scoreLinkRelevance } from './keyword-filter'
 import {
@@ -85,11 +87,29 @@ async function analyzePageWithAI(
     )
     .join('\n')
 
+  // Build dynamic keyword list
+  const baseKeywords = 'React, Vue, Angular, JavaScript, TypeScript, CSS, HTML, Svelte, Next.js, front-end, frontend, UI developer, web developer'
+  const extraKeywords = store.config.additionalKeywords.length > 0
+    ? `\nADDITIONAL KEYWORDS: ${store.config.additionalKeywords.join(', ')}`
+    : ''
+  const exclusions = store.config.exclusionTerms.length > 0
+    ? `\nEXCLUDE/DEPRIORITIZE: ${store.config.exclusionTerms.join(', ')}`
+    : ''
+  const seniority = store.config.seniorityFilter !== 'Any'
+    ? `\nSENIORITY FOCUS: ${store.config.seniorityFilter} level positions`
+    : ''
+  const language = store.config.languagePreference !== 'Any'
+    ? `\nLANGUAGE PREFERENCE: ${store.config.languagePreference} language postings`
+    : ''
+  const customPromptSuffix = store.config.customSystemPrompt
+    ? `\n\nADDITIONAL CONTEXT FROM USER:\n${store.config.customSystemPrompt}`
+    : ''
+
   const prompt = `You are an expert web crawler agent specializing in finding front-end developer job opportunities in the Netherlands.
 
 CURRENT TARGET: Front-end developer jobs within ${store.config.radiusKm}km of ${store.config.location}, Netherlands.
 
-KEYWORDS TO LOOK FOR: React, Vue, Angular, JavaScript, TypeScript, CSS, HTML, Svelte, Next.js, front-end, frontend, UI developer, web developer.
+KEYWORDS TO LOOK FOR: ${baseKeywords}${extraKeywords}${exclusions}${seniority}${language}
 
 Analyze this web page and extract:
 1. Any front-end developer job postings found on this page
@@ -111,11 +131,15 @@ INSTRUCTIONS:
 - Identify the top 10 most promising links that could lead to more front-end jobs
 - Focus on Dutch locations: Amsterdam, Rotterdam, Utrecht, Den Haag, Eindhoven, etc.
 - Flag remote-friendly positions
-- Return empty arrays if no relevant content found`
+- Return empty arrays if no relevant content found${customPromptSuffix}`
 
   try {
+    const model = store.config.aiProvider === 'grok'
+      ? xai('grok-3-mini-fast')
+      : groq('llama-3.3-70b-versatile')
+
     const { output } = await generateText({
-      model: groq('llama-3.3-70b-versatile'),
+      model,
       output: Output.object({ schema: jobExtractionSchema }),
       prompt,
       maxOutputTokens: 4000,
@@ -124,7 +148,7 @@ INSTRUCTIONS:
 
     return output
   } catch (error) {
-    store.log('error', `AI analysis failed: ${error instanceof Error ? error.message : 'Unknown error'}`, pageUrl)
+    store.log('error', `AI analysis failed (${store.config.aiProvider}): ${error instanceof Error ? error.message : 'Unknown error'}`, pageUrl)
     return null
   }
 }

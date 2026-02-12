@@ -12,6 +12,12 @@ export function useCrawlStatus(refreshInterval: number = 2000) {
       radiusKm: number
       maxDepth: number
       delayBetweenRequests: number
+      aiProvider: string
+      additionalKeywords: string[]
+      exclusionTerms: string[]
+      seniorityFilter: string
+      languagePreference: string
+      customSystemPrompt: string
     }
   }>('/api/crawl/status', fetcher, {
     refreshInterval,
@@ -56,11 +62,22 @@ export function useAnalytics() {
   })
 }
 
-export async function startCrawl(location: string, radiusKm: number) {
+export async function startCrawl(
+  location: string,
+  radiusKm: number,
+  aiConfig?: {
+    aiProvider?: string
+    customSystemPrompt?: string
+    additionalKeywords?: string[]
+    exclusionTerms?: string[]
+    seniorityFilter?: string
+    languagePreference?: string
+  }
+) {
   const res = await fetch('/api/crawl/start', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ location, radiusKm }),
+    body: JSON.stringify({ location, radiusKm, ...aiConfig }),
   })
   return res.json()
 }

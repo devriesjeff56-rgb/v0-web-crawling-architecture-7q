@@ -11,6 +11,7 @@ import type {
   CrawlConfig,
   CrawlerStatus,
   ActivityLogEntry,
+  AiProvider,
 } from './types'
 import { DUTCH_CITIES, SEED_URLS } from './types'
 import { findDutchCity } from './geo-filter'
@@ -120,6 +121,12 @@ class CrawlStore {
     delayBetweenRequests: 3000,
     requestTimeout: 12000,
     userAgent: 'FrontEndJobCrawler/1.0 (Educational Research Bot)',
+    aiProvider: 'groq' as AiProvider,
+    customSystemPrompt: '',
+    additionalKeywords: [],
+    exclusionTerms: [],
+    seniorityFilter: 'Any',
+    languagePreference: 'Any',
   }
 
   // Runtime state
